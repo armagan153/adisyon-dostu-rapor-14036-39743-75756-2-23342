@@ -47,6 +47,10 @@ const Report = () => {
     }
   };
 
+  const reportTitle = isAdmin 
+    ? "Rapor" 
+    : format(selectedDate, "d MMMM yyyy", { locale: tr }) + " Raporu";
+
   const totalSales = transactions.reduce((sum, t) => sum + t.total_amount, 0);
   const totalTables = transactions.length;
   const averageCheck = totalTables > 0 ? totalSales / totalTables : 0;
@@ -59,31 +63,31 @@ const Report = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Geri
           </Button>
-          <h1 className="text-3xl font-bold">Rapor</h1>
+          <h1 className="text-3xl font-bold">{reportTitle}</h1>
           <div className="w-24" />
         </div>
 
-        <div className="flex gap-2 mb-6">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="w-[240px] justify-start">
-                <Calendar className="w-4 h-4 mr-2" />
-                {format(selectedDate, "PPP", { locale: tr })}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-                locale={tr}
-              />
-            </PopoverContent>
-          </Popover>
+        {isAdmin && (
+          <div className="flex gap-2 mb-6">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[240px] justify-start">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  {format(selectedDate, "PPP", { locale: tr })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                  locale={tr}
+                />
+              </PopoverContent>
+            </Popover>
 
-          {isAdmin && (
             <Button
               variant="outline"
               onClick={() => navigate("/audit-logs")}
@@ -91,8 +95,8 @@ const Report = () => {
               <FileText className="w-4 h-4 mr-2" />
               Değişiklik Kayıtları
             </Button>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card className="p-6">
