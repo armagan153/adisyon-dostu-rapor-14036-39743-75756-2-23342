@@ -50,6 +50,17 @@ export type Transaction = {
   completed_at: string;
 };
 
+export type AuditLog = {
+  id: string;
+  transaction_id: string;
+  edited_by: string;
+  edit_type: string;
+  old_value: any;
+  new_value: any;
+  description: string | null;
+  created_at: string;
+};
+
 export type MediaLibraryItem = {
   id: string;
   file_name: string;
@@ -376,6 +387,68 @@ export async function getTodayTransactions(): Promise<Transaction[]> {
   tomorrow.setDate(tomorrow.getDate() + 1);
 
   return getTransactions(today, tomorrow);
+}
+
+export async function updateTransaction(
+  id: string,
+  data: { total_amount?: number; items?: any }
+): Promise<void> {
+  const { error } = await supabase
+    .from('transactions')
+    .update(data)
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function deleteTransactionItem(
+  transactionId: string,
+  itemIndex: number,
+  transaction: Transaction
+): Promise<void> {
+  const newItems = transaction.items.filter((_: any, idx: number) => idx !== itemIndex);
+  const newTotal = newItems.reduce((sum: number, item: any) => 
+    sum + (item.price || 0) * item.quantity, 0
+  );
+
+  await updateTransaction(transactionId, {
+    items: newItems,
+    total_amount: newTotal
+  });
+}
+
+// Audit Log Operations
+export async function createAuditLog(data: {
+  transaction_id: string;
+  edited_by: string;
+  edit_type: string;
+  old_value?: any;
+  new_value?: any;
+  description?: string;
+}): Promise<AuditLog> {
+  const { data: result, error } = await supabase
+    .from('transaction_audit_logs')
+    .insert(data)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return result;
+}
+
+export async function getAuditLogs(transactionId?: string): Promise<AuditLog[]> {
+  let query = supabase
+    .from('transaction_audit_logs')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (transactionId) {
+    query = query.eq('transaction_id', transactionId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
 }
 
 // Media Library Operations

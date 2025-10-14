@@ -1,25 +1,49 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, TrendingUp, Receipt, DollarSign } from "lucide-react";
-import { getTodayTransactions } from "@/lib/supabaseHelpers";
+import { ArrowLeft, TrendingUp, Receipt, DollarSign, Calendar, FileText } from "lucide-react";
+import { getTransactions } from "@/lib/supabaseHelpers";
 import { useEffect, useState } from "react";
 import type { Transaction } from "@/lib/supabaseHelpers";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { TransactionEditDialog } from "@/components/TransactionEditDialog";
+import { isAdminLoggedIn } from "@/lib/adminAuth";
 
 const Report = () => {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const isAdmin = isAdminLoggedIn();
 
   useEffect(() => {
     loadTransactions();
-  }, []);
+  }, [selectedDate]);
 
   const loadTransactions = async () => {
     try {
-      const data = await getTodayTransactions();
+      const startDate = new Date(selectedDate);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(selectedDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      const data = await getTransactions(startDate, endDate);
       setTransactions(data);
     } catch (error) {
       console.error("Error loading transactions:", error);
+    }
+  };
+
+  const handleTransactionClick = (transaction: Transaction) => {
+    if (isAdmin) {
+      setSelectedTransaction(transaction);
+      setIsEditDialogOpen(true);
     }
   };
 
@@ -35,8 +59,39 @@ const Report = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Geri
           </Button>
-          <h1 className="text-3xl font-bold">Gün Sonu Raporu</h1>
+          <h1 className="text-3xl font-bold">Rapor</h1>
           <div className="w-24" />
+        </div>
+
+        <div className="flex gap-2 mb-6">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-[240px] justify-start">
+                <Calendar className="w-4 h-4 mr-2" />
+                {format(selectedDate, "PPP", { locale: tr })}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+                locale={tr}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {isAdmin && (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/audit-logs")}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Değişiklik Kayıtları
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -81,12 +136,19 @@ const Report = () => {
           <h2 className="text-xl font-semibold mb-4">İşlemler</h2>
           {transactions.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">
-              Bugün henüz işlem yapılmadı
+              Seçili tarihte işlem yapılmadı
             </p>
           ) : (
             <div className="space-y-3">
               {transactions.map((transaction) => (
-                <div key={transaction.id} className="p-4 bg-secondary rounded-lg">
+                <div
+                  key={transaction.id}
+                  className={cn(
+                    "p-4 bg-secondary rounded-lg",
+                    isAdmin && "cursor-pointer hover:bg-secondary/80 transition-colors"
+                  )}
+                  onClick={() => handleTransactionClick(transaction)}
+                >
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <p className="font-semibold">{transaction.table_name}</p>
@@ -110,6 +172,13 @@ const Report = () => {
             </div>
           )}
         </Card>
+
+        <TransactionEditDialog
+          transaction={selectedTransaction}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          onTransactionUpdated={loadTransactions}
+        />
       </div>
     </div>
   );

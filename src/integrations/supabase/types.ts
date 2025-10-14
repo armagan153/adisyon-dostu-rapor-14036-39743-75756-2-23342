@@ -202,6 +202,47 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_audit_logs: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          edit_type: string
+          edited_by: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          transaction_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          edit_type: string
+          edited_by: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          transaction_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          edit_type?: string
+          edited_by?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_audit_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           completed_at: string | null
