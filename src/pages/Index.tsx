@@ -5,7 +5,7 @@ import { TableCard } from "@/components/TableCard";
 import { AdminLogin } from "@/components/AdminLogin";
 import { getTables } from "@/lib/supabaseHelpers";
 import type { Table } from "@/lib/supabaseHelpers";
-import { FileText, UtensilsCrossed, Settings } from "lucide-react";
+import { UtensilsCrossed, Settings } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -45,16 +45,10 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={() => navigate("/report")} size="lg" variant="outline">
-                <FileText className="w-4 h-4 mr-2" />
-                Rapor
-              </Button>
-              <Button onClick={() => setAdminLoginOpen(true)} size="lg">
-                <Settings className="w-4 h-4 mr-2" />
-                Admin
-              </Button>
-            </div>
+            <Button onClick={() => setAdminLoginOpen(true)} size="lg">
+              <Settings className="w-4 h-4 mr-2" />
+              Admin
+            </Button>
           </div>
         </div>
       </header>

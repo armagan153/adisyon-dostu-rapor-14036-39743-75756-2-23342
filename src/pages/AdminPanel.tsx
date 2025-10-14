@@ -6,7 +6,7 @@ import { ProductGroupManager } from "@/components/admin/ProductGroupManager";
 import { ProductManager } from "@/components/admin/ProductManager";
 import { TableManager } from "@/components/admin/TableManager";
 import { isAdminLoggedIn, clearAdminSession } from "@/lib/adminAuth";
-import { ArrowLeft, LogOut, Settings } from "lucide-react";
+import { ArrowLeft, LogOut, Settings, FileText } from "lucide-react";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -34,6 +34,10 @@ const AdminPanel = () => {
               <h1 className="text-2xl font-bold">Admin Paneli</h1>
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/report")}>
+                <FileText className="w-4 h-4 mr-2" />
+                Rapor
+              </Button>
               <Button variant="outline" onClick={() => navigate("/")}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Ana Sayfa
