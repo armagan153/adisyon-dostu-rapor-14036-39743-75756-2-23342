@@ -6,11 +6,21 @@ import { AdminLogin } from "@/components/AdminLogin";
 import { getTables } from "@/lib/supabaseHelpers";
 import type { Table } from "@/lib/supabaseHelpers";
 import { UtensilsCrossed, Settings } from "lucide-react";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 
 const Index = () => {
   const navigate = useNavigate();
   const [tables, setTables] = useState<Table[]>([]);
   const [adminLoginOpen, setAdminLoginOpen] = useState(false);
+  const { isAdmin, loading } = useAdminAuth();
+
+  const handleAdminClick = () => {
+    if (isAdmin) {
+      navigate("/admin");
+    } else {
+      setAdminLoginOpen(true);
+    }
+  };
 
   useEffect(() => {
     loadTables();
@@ -42,12 +52,15 @@ const Index = () => {
                 <h1 className="text-2xl font-bold">Can POS</h1>
                 <p className="text-sm text-muted-foreground">
                   {occupiedTables} / {tables.length} Masa Dolu
+                  {!loading && isAdmin && (
+                    <span className="ml-2 text-primary">• Admin Girişi Aktif</span>
+                  )}
                 </p>
               </div>
             </div>
-            <Button onClick={() => setAdminLoginOpen(true)} size="lg">
+            <Button onClick={handleAdminClick} size="lg" variant={isAdmin ? "default" : "outline"}>
               <Settings className="w-4 h-4 mr-2" />
-              Admin
+              {isAdmin ? "Admin Panel" : "Admin"}
             </Button>
           </div>
         </div>
