@@ -16,6 +16,7 @@ const TableDetail = () => {
   const [items, setItems] = useState<TableItem[]>([]);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [closeTableOpen, setCloseTableOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -49,59 +50,57 @@ const TableDetail = () => {
     }
   };
 
-  // Admin kontrolü kaldırıldı, tüm authenticated kullanıcılar masayı kapatabilir
   const handleCloseTable = async () => {
-    if (!table) return;
+    if (!table || isClosing) return;
 
+    setIsClosing(true);
+    
     try {
       const total = items.reduce(
         (sum, item) => sum + (item.product_price || 0) * item.quantity,
         0
       );
 
-      // 1. Transaction oluşturma
+      // Eğer masada ürün varsa transaction oluştur
       if (items.length > 0) {
-        try {
-          await createTransaction({
-            table_id: table.id,
-            table_name: table.name,
-            total_amount: total,
-            items: items.map((item) => ({
-              name: item.product_name,
-              price: item.product_price,
-              quantity: item.quantity,
-            })),
-          });
-        } catch (err: any) {
-          console.error("Transaction oluşturulamadı:", err);
-          toast.error("Transaction oluşturulamadı: " + (err?.message || err));
-          return;
-        }
+        console.log("Transaction oluşturuluyor...");
+        
+        // Transaction oluştur
+        await createTransaction({
+          table_id: table.id,
+          table_name: table.name,
+          total_amount: total,
+          items: items.map((item) => ({
+            name: item.product_name,
+            price: item.product_price,
+            quantity: item.quantity,
+          })),
+        });
+        
+        console.log("Transaction oluşturuldu");
 
-        // 2. Table items silme
-        try {
-          await clearTableItems(table.id);
-        } catch (err: any) {
-          console.error("Table items silinemedi:", err);
-          toast.error("Table items silinemedi: " + (err?.message || err));
-          return;
-        }
+        // Table items'ları temizle
+        console.log("Table items temizleniyor...");
+        await clearTableItems(table.id);
+        console.log("Table items temizlendi");
       }
 
-      // 3. Masa durumunu güncelleme
-      try {
-        await updateTableStatus(table.id, false, null);
-      } catch (err: any) {
-        console.error("Masa durumu güncellenemedi:", err);
-        toast.error("Masa durumu güncellenemedi: " + (err?.message || err));
-        return;
-      }
+      // Masa durumunu güncelle - opened_at'ı null yap
+      console.log("Masa durumu güncelleniyor...");
+      await updateTableStatus(table.id, false, null);
+      console.log("Masa durumu güncellendi");
 
-      toast.success("Masa kapatıldı!");
-      navigate("/");
+      toast.success("Masa başarıyla kapatıldı!");
+      
+      // Ana sayfaya yönlendir
+      setTimeout(() => {
+        navigate("/");
+      }, 500);
+      
     } catch (error: any) {
-      console.error("Masa kapatılamadı:", error);
-      toast.error("Masa kapatılamadı: " + (error?.message || error));
+      console.error("Masa kapatma hatası:", error);
+      toast.error("Masa kapatılamadı: " + (error?.message || "Bilinmeyen hata"));
+      setIsClosing(false);
     }
   };
 
@@ -185,9 +184,10 @@ const TableDetail = () => {
           size="lg"
           className="w-full"
           onClick={() => setCloseTableOpen(true)}
+          disabled={isClosing}
         >
           <DoorClosed className="w-5 h-5 mr-2" />
-          Masayı Kapat
+          {isClosing ? "Masa Kapatılıyor..." : "Masayı Kapat"}
         </Button>
       </div>
 
@@ -216,9 +216,9 @@ const TableDetail = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCloseTable}>
-              Onayla
+            <AlertDialogCancel disabled={isClosing}>İptal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCloseTable} disabled={isClosing}>
+              {isClosing ? "Kapatılıyor..." : "Onayla"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

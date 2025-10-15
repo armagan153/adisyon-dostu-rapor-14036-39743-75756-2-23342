@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, TrendingUp, Receipt, DollarSign, Calendar, FileText } from "lucide-react";
+import { ArrowLeft, TrendingUp, Receipt, DollarSign, Calendar, FileText, User, Users } from "lucide-react";
 import { getTransactions } from "@/lib/supabaseHelpers";
 import { useEffect, useState } from "react";
 import type { Transaction } from "@/lib/supabaseHelpers";
@@ -20,9 +20,6 @@ const Report = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { isAdmin, loading } = useAdminAuth();
-
-  // Debug log
-  console.log("Report - isAdmin:", isAdmin, "loading:", loading);
 
   useEffect(() => {
     loadTransactions();
@@ -167,6 +164,47 @@ const Report = () => {
                       {transaction.total_amount.toFixed(2)} ₺
                     </p>
                   </div>
+
+                  {/* Kullanıcı Bilgileri */}
+                  <div className="mb-3 p-2 bg-background/50 rounded text-xs space-y-1">
+                    <div className="flex items-center gap-2">
+                      <User className="w-3 h-3" />
+                      <span className="font-medium">Açan:</span>
+                      <span className="text-muted-foreground">
+                        {transaction.opened_by || 'bilinmeyen'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <User className="w-3 h-3" />
+                      <span className="font-medium">Kapatan:</span>
+                      <span className="text-muted-foreground">
+                        {transaction.closed_by || 'bilinmeyen'}
+                      </span>
+                    </div>
+                    {transaction.items_added_by && Object.keys(transaction.items_added_by).length > 0 && (
+                      <div className="flex items-start gap-2">
+                        <Users className="w-3 h-3 mt-0.5" />
+                        <div>
+                          <span className="font-medium">Ürün Ekleyenler:</span>
+                          <div className="ml-2 mt-1">
+                            {Object.entries(transaction.items_added_by).map(([user, items]: [string, any]) => (
+                              <div key={user} className="text-muted-foreground">
+                                <span className="font-medium">{user}:</span>
+                                {Array.isArray(items) && items.map((item: any, idx: number) => (
+                                  <span key={idx} className="ml-1">
+                                    {item.quantity}x {item.product}
+                                    {idx < items.length - 1 ? ', ' : ''}
+                                  </span>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Ürün Listesi */}
                   <div className="space-y-1">
                     {Array.isArray(transaction.items) && transaction.items.map((item: any, index: number) => (
                       <p key={index} className="text-sm text-muted-foreground">

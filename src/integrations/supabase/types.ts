@@ -35,6 +35,36 @@ export type Database = {
         }
         Relationships: []
       }
+      app_users: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          id: string
+          is_active: boolean | null
+          password_hash: string
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          password_hash: string
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          password_hash?: string
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
       media_library: {
         Row: {
           created_at: string | null
@@ -132,6 +162,7 @@ export type Database = {
       }
       table_items: {
         Row: {
+          added_by: string | null
           created_at: string | null
           id: string
           product_id: string
@@ -141,6 +172,7 @@ export type Database = {
           table_id: number
         }
         Insert: {
+          added_by?: string | null
           created_at?: string | null
           id?: string
           product_id: string
@@ -150,6 +182,7 @@ export type Database = {
           table_id: number
         }
         Update: {
+          added_by?: string | null
           created_at?: string | null
           id?: string
           product_id?: string
@@ -180,24 +213,30 @@ export type Database = {
           created_at: string | null
           id: number
           is_occupied: boolean | null
+          last_modified_by: string | null
           name: string
           opened_at: string | null
+          opened_by: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id: number
           is_occupied?: boolean | null
+          last_modified_by?: string | null
           name: string
           opened_at?: string | null
+          opened_by?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: number
           is_occupied?: boolean | null
+          last_modified_by?: string | null
           name?: string
           opened_at?: string | null
+          opened_by?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -245,25 +284,34 @@ export type Database = {
       }
       transactions: {
         Row: {
+          closed_by: string | null
           completed_at: string | null
           id: string
           items: Json
+          items_added_by: Json | null
+          opened_by: string | null
           table_id: number
           table_name: string
           total_amount: number
         }
         Insert: {
+          closed_by?: string | null
           completed_at?: string | null
           id?: string
           items: Json
+          items_added_by?: Json | null
+          opened_by?: string | null
           table_id: number
           table_name: string
           total_amount: number
         }
         Update: {
+          closed_by?: string | null
           completed_at?: string | null
           id?: string
           items?: Json
+          items_added_by?: Json | null
+          opened_by?: string | null
           table_id?: number
           table_name?: string
           total_amount?: number
@@ -296,6 +344,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_user_with_password: {
+        Args: {
+          password: string
+          username: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -303,9 +358,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_user_password: {
+        Args: {
+          new_password: string
+          user_id: string
+        }
+        Returns: boolean
+      }
       verify_admin_password: {
         Args: { pw: string }
         Returns: boolean
+      }
+      verify_user_password: {
+        Args: {
+          pw: string
+          uname: string
+        }
+        Returns: {
+          is_valid: boolean
+          user_id: string
+        }[]
       }
     }
     Enums: {

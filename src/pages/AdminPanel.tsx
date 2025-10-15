@@ -5,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductGroupManager } from "@/components/admin/ProductGroupManager";
 import { ProductManager } from "@/components/admin/ProductManager";
 import { TableManager } from "@/components/admin/TableManager";
-import { ArrowLeft, LogOut, Settings, FileText } from "lucide-react";
+import { UserManager } from "@/components/admin/UserManager";
+import { ArrowLeft, LogOut, Settings, FileText, Users } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 
 const AdminPanel = () => {
@@ -61,12 +62,20 @@ const AdminPanel = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="groups" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto">
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+            <TabsTrigger value="users">
+              <Users className="w-4 h-4 mr-2" />
+              Kullanıcılar
+            </TabsTrigger>
             <TabsTrigger value="groups">Ürün Grupları</TabsTrigger>
             <TabsTrigger value="products">Ürünler</TabsTrigger>
             <TabsTrigger value="tables">Masalar</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="users">
+            <UserManager />
+          </TabsContent>
 
           <TabsContent value="groups">
             <ProductGroupManager />

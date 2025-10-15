@@ -1,16 +1,15 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
-// Type imports
-export type ProductGroup = {
+export interface ProductGroup {
   id: string;
   name: string;
   image_url: string | null;
   order_index: number;
   created_at: string;
   updated_at: string;
-};
+}
 
-export type Product = {
+export interface Product {
   id: string;
   name: string;
   price: number | null;
@@ -19,490 +18,415 @@ export type Product = {
   created_at: string;
   updated_at: string;
   product_groups?: ProductGroup;
-};
+}
 
-export type Table = {
+export interface Table {
   id: number;
   name: string;
   is_occupied: boolean;
   opened_at: string | null;
+  opened_by?: string | null;
+  last_modified_by?: string | null;
   created_at: string;
   updated_at: string;
-};
+}
 
-export type TableItem = {
+export interface TableItem {
   id: string;
   table_id: number;
   product_id: string;
   product_name: string;
   product_price: number | null;
   quantity: number;
+  added_by?: string | null;
   created_at: string;
   products?: Product;
-};
+}
 
-export type Transaction = {
+export interface Transaction {
   id: string;
   table_id: number;
   table_name: string;
   total_amount: number;
   items: any;
   completed_at: string;
-};
-
-export type AuditLog = {
-  id: string;
-  transaction_id: string;
-  edited_by: string;
-  edit_type: string;
-  old_value: any;
-  new_value: any;
-  description: string | null;
-  created_at: string;
-};
-
-export type MediaLibraryItem = {
-  id: string;
-  file_name: string;
-  file_url: string;
-  file_size: number | null;
-  mime_type: string | null;
-  uploaded_at: string;
-  created_at: string;
-};
-
-// Storage Operations
-export async function uploadProductGroupImage(file: File, groupId: string): Promise<string> {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${groupId}-${Date.now()}.${fileExt}`;
-  const filePath = fileName;
-
-  const { error: uploadError } = await supabase.storage
-    .from('product-group-images')
-    .upload(filePath, file, { upsert: true });
-
-  if (uploadError) throw uploadError;
-
-  const { data } = supabase.storage
-    .from('product-group-images')
-    .getPublicUrl(filePath);
-
-  return data.publicUrl;
+  opened_by?: string | null;
+  closed_by?: string | null;
+  items_added_by?: any;
 }
 
-export async function deleteProductGroupImage(imageUrl: string): Promise<void> {
-  if (!imageUrl) return;
-  
-  const path = imageUrl.split('/product-group-images/').pop();
-  if (!path) return;
-
-  await supabase.storage
-    .from('product-group-images')
-    .remove([path]);
-}
-
-// Product Group Operations
-export async function getProductGroups(): Promise<ProductGroup[]> {
-  const { data, error } = await supabase
-    .from('product_groups')
-    .select('*')
-    .order('order_index', { ascending: true });
-
-  if (error) throw error;
-  return data || [];
-}
-
-export async function createProductGroup(data: {
+export interface TransactionItem {
   name: string;
-  image_url?: string;
-  order_index?: number;
-}): Promise<ProductGroup> {
-  const { data: result, error } = await supabase
-    .from('product_groups')
-    .insert(data)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return result;
+  price: number;
+  quantity: number;
 }
 
-export async function updateProductGroup(
-  id: string,
-  data: Partial<ProductGroup>
-): Promise<void> {
-  const { error } = await supabase
-    .from('product_groups')
-    .update(data)
-    .eq('id', id);
-
-  if (error) throw error;
+export interface CreateTransactionData {
+  table_id: number;
+  table_name: string;
+  total_amount: number;
+  items: TransactionItem[];
+  opened_by?: string;
+  closed_by?: string;
+  items_added_by?: any;
 }
 
-export async function deleteProductGroup(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('product_groups')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
-}
-
-// Product Operations
-export async function getProducts(groupId?: string): Promise<Product[]> {
-  let query = supabase
-    .from('products')
-    .select('*, product_groups(*)')
-    .eq('is_active', true)
-    .order('name');
-
-  if (groupId) {
-    query = query.eq('group_id', groupId);
+// Kullanıcı bilgisini localStorage'dan al
+const getCurrentUser = () => {
+  const authData = localStorage.getItem('auth');
+  if (authData) {
+    const parsed = JSON.parse(authData);
+    return parsed.username || 'bilinmeyen';
   }
+  return 'bilinmeyen';
+};
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
-}
-
-export async function getAllProducts(): Promise<Product[]> {
+// Product Groups
+export const getProductGroups = async (): Promise<ProductGroup[]> => {
   const { data, error } = await supabase
-    .from('products')
-    .select('*, product_groups(*)')
-    .order('name');
+    .from("product_groups")
+    .select("*")
+    .order("order_index", { ascending: true });
 
   if (error) throw error;
   return data || [];
-}
+};
 
-export async function createProduct(data: {
-  name: string;
-  price?: number;
-  group_id: string;
-  is_active?: boolean;
-}): Promise<Product> {
-  const { data: result, error } = await supabase
-    .from('products')
-    .insert(data)
+export const createProductGroup = async (group: Omit<ProductGroup, "id" | "created_at" | "updated_at">): Promise<ProductGroup> => {
+  const { data, error } = await supabase
+    .from("product_groups")
+    .insert(group)
     .select()
-    .single();
-
-  if (error) throw error;
-  return result;
-}
-
-export async function updateProduct(
-  id: string,
-  data: Partial<Product>
-): Promise<void> {
-  const { error } = await supabase
-    .from('products')
-    .update(data)
-    .eq('id', id);
-
-  if (error) throw error;
-}
-
-export async function deleteProduct(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('products')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
-}
-
-// Table Operations
-export async function getTables(): Promise<Table[]> {
-  const { data, error } = await supabase
-    .from('tables')
-    .select('*')
-    .order('id');
-
-  if (error) throw error;
-  return data || [];
-}
-
-export async function getTable(id: number): Promise<Table | null> {
-  const { data, error } = await supabase
-    .from('tables')
-    .select('*')
-    .eq('id', id)
     .single();
 
   if (error) throw error;
   return data;
-}
+};
 
-export async function updateTableStatus(
-  id: number,
-  isOccupied: boolean,
-  openedAt?: string | null
-): Promise<void> {
+export const updateProductGroup = async (id: string, updates: Partial<ProductGroup>): Promise<ProductGroup> => {
+  const { data, error } = await supabase
+    .from("product_groups")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const deleteProductGroup = async (id: string): Promise<void> => {
   const { error } = await supabase
-    .from('tables')
-    .update({
-      is_occupied: isOccupied,
-      opened_at: openedAt,
+    .from("product_groups")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+};
+
+// Products
+export const getProducts = async (): Promise<Product[]> => {
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      *,
+      product_groups (*)
+    `)
+    .eq("is_active", true)
+    .order("name");
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const getProductsByGroup = async (groupId: string): Promise<Product[]> => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("group_id", groupId)
+    .eq("is_active", true)
+    .order("name");
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const createProduct = async (product: Omit<Product, "id" | "created_at" | "updated_at">): Promise<Product> => {
+  const { data, error } = await supabase
+    .from("products")
+    .insert(product)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateProduct = async (id: string, updates: Partial<Product>): Promise<Product> => {
+  const { data, error } = await supabase
+    .from("products")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const deleteProduct = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+};
+
+// Tables
+export const getTables = async (): Promise<Table[]> => {
+  const { data, error } = await supabase
+    .from("tables")
+    .select("*")
+    .order("id");
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const getTable = async (id: number): Promise<Table> => {
+  const { data, error } = await supabase
+    .from("tables")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateTableStatus = async (
+  id: number, 
+  isOccupied: boolean, 
+  openedAt: string | null
+): Promise<void> => {
+  const currentUser = getCurrentUser();
+  
+  const updates: any = {
+    is_occupied: isOccupied,
+    opened_at: openedAt,
+    updated_at: new Date().toISOString(),
+    last_modified_by: currentUser
+  };
+
+  // Masa açılıyorsa opened_by'ı set et
+  if (isOccupied && openedAt) {
+    updates.opened_by = currentUser;
+  }
+
+  const { error } = await supabase
+    .from("tables")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) throw error;
+};
+
+// Table Items
+export const getTableItems = async (tableId: number): Promise<TableItem[]> => {
+  const { data, error } = await supabase
+    .from("table_items")
+    .select(`
+      *,
+      products (*)
+    `)
+    .eq("table_id", tableId)
+    .order("created_at");
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const addTableItem = async (item: Omit<TableItem, "id" | "created_at">): Promise<TableItem> => {
+  const currentUser = getCurrentUser();
+  
+  const { data, error } = await supabase
+    .from("table_items")
+    .insert({
+      ...item,
+      added_by: currentUser
     })
-    .eq('id', id);
-
-  if (error) throw error;
-}
-
-export async function createTable(data: {
-  id: number;
-  name: string;
-}): Promise<Table> {
-  const { data: result, error } = await supabase
-    .from('tables')
-    .insert(data)
     .select()
     .single();
 
   if (error) throw error;
-  return result;
-}
+  return data;
+};
 
-export async function updateTableName(id: number, name: string): Promise<void> {
+export const deleteTableItem = async (id: string): Promise<void> => {
   const { error } = await supabase
-    .from('tables')
-    .update({ name })
-    .eq('id', id);
-
-  if (error) throw error;
-}
-
-export async function deleteTable(id: number): Promise<void> {
-  const { error } = await supabase
-    .from('tables')
+    .from("table_items")
     .delete()
-    .eq('id', id);
+    .eq("id", id);
 
   if (error) throw error;
-}
+};
 
-// Table Items Operations
-export async function getTableItems(tableId: number): Promise<TableItem[]> {
-  const { data, error } = await supabase
-    .from('table_items')
-    .select('*, products(*)')
-    .eq('table_id', tableId)
-    .order('created_at');
-
-  if (error) throw error;
-  return data || [];
-}
-
-export async function addTableItem(data: {
-  table_id: number;
-  product_id: string;
-  product_name: string;
-  product_price: number | null;
-  quantity: number;
-}): Promise<TableItem> {
-  const { data: result, error } = await supabase
-    .from('table_items')
-    .insert(data)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return result;
-}
-
-export async function updateTableItemQuantity(
-  id: string,
-  quantity: number
-): Promise<void> {
+export const clearTableItems = async (tableId: number): Promise<void> => {
   const { error } = await supabase
-    .from('table_items')
-    .update({ quantity })
-    .eq('id', id);
-
-  if (error) throw error;
-}
-
-export async function deleteTableItem(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('table_items')
+    .from("table_items")
     .delete()
-    .eq('id', id);
+    .eq("table_id", tableId);
 
   if (error) throw error;
-}
+};
 
-export async function clearTableItems(tableId: number): Promise<void> {
-  const { error } = await supabase
-    .from('table_items')
-    .delete()
-    .eq('table_id', tableId);
-
-  if (error) throw error;
-}
-
-// Transaction Operations
-export async function createTransaction(data: {
-  table_id: number;
-  table_name: string;
-  total_amount: number;
-  items: any;
-}): Promise<Transaction> {
-  const { data: result, error } = await supabase
-    .from('transactions')
-    .insert(data)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return result;
-}
-
-export async function getTransactions(
-  startDate?: Date,
-  endDate?: Date
-): Promise<Transaction[]> {
+// Transactions
+export const getTransactions = async (startDate?: Date, endDate?: Date): Promise<Transaction[]> => {
   let query = supabase
-    .from('transactions')
-    .select('*')
-    .order('completed_at', { ascending: false });
+    .from("transactions")
+    .select("*")
+    .order("completed_at", { ascending: false });
 
-  if (startDate) {
-    query = query.gte('completed_at', startDate.toISOString());
-  }
-  if (endDate) {
-    query = query.lte('completed_at', endDate.toISOString());
+  if (startDate && endDate) {
+    query = query
+      .gte("completed_at", startDate.toISOString())
+      .lte("completed_at", endDate.toISOString());
   }
 
   const { data, error } = await query;
+
   if (error) throw error;
   return data || [];
-}
+};
 
-export async function getTodayTransactions(): Promise<Transaction[]> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+export const createTransaction = async (transactionData: CreateTransactionData): Promise<Transaction> => {
+  const currentUser = getCurrentUser();
   
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Masayı açan kullanıcıyı al
+  const { data: tableData } = await supabase
+    .from("tables")
+    .select("opened_by")
+    .eq("id", transactionData.table_id)
+    .single();
 
-  return getTransactions(today, tomorrow);
-}
+  // Ürün ekleyen kullanıcıları al
+  const { data: itemsData } = await supabase
+    .from("table_items")
+    .select("added_by, product_name, quantity")
+    .eq("table_id", transactionData.table_id);
 
-export async function updateTransaction(
-  id: string,
-  data: { total_amount?: number; items?: any }
-): Promise<void> {
-  const { error } = await supabase
-    .from('transactions')
-    .update(data)
-    .eq('id', id);
+  // Ürün ekleyen kullanıcıları grupla
+  const itemsAddedBy = itemsData?.reduce((acc: any, item) => {
+    const user = item.added_by || 'bilinmeyen';
+    if (!acc[user]) {
+      acc[user] = [];
+    }
+    acc[user].push({
+      product: item.product_name,
+      quantity: item.quantity
+    });
+    return acc;
+  }, {}) || {};
 
-  if (error) throw error;
-}
-
-export async function deleteTransactionItem(
-  transactionId: string,
-  itemIndex: number,
-  transaction: Transaction
-): Promise<void> {
-  const newItems = transaction.items.filter((_: any, idx: number) => idx !== itemIndex);
-  const newTotal = newItems.reduce((sum: number, item: any) => 
-    sum + (item.price || 0) * item.quantity, 0
-  );
-
-  await updateTransaction(transactionId, {
-    items: newItems,
-    total_amount: newTotal
-  });
-}
-
-// Audit Log Operations
-export async function createAuditLog(data: {
-  transaction_id: string;
-  edited_by: string;
-  edit_type: string;
-  old_value?: any;
-  new_value?: any;
-  description?: string;
-}): Promise<AuditLog> {
-  const { data: result, error } = await supabase
-    .from('transaction_audit_logs')
-    .insert(data)
+  const { data, error } = await supabase
+    .from("transactions")
+    .insert({
+      table_id: transactionData.table_id,
+      table_name: transactionData.table_name,
+      total_amount: transactionData.total_amount,
+      items: transactionData.items,
+      completed_at: new Date().toISOString(),
+      opened_by: tableData?.opened_by || 'bilinmeyen',
+      closed_by: currentUser,
+      items_added_by: itemsAddedBy
+    })
     .select()
     .single();
 
   if (error) throw error;
-  return result;
-}
+  return data;
+};
 
-export async function getAuditLogs(transactionId?: string): Promise<AuditLog[]> {
-  let query = supabase
-    .from('transaction_audit_logs')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (transactionId) {
-    query = query.eq('transaction_id', transactionId);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
-}
-
-// Media Library Operations
-export async function getMediaLibrary(): Promise<MediaLibraryItem[]> {
+export const updateTransaction = async (id: string, updates: Partial<Transaction>): Promise<Transaction> => {
   const { data, error } = await supabase
-    .from('media_library')
-    .select('*')
-    .order('uploaded_at', { ascending: false });
+    .from("transactions")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
 
   if (error) throw error;
-  return data || [];
-}
+  return data;
+};
 
-export async function addMediaToLibrary(file: File): Promise<MediaLibraryItem> {
+export const deleteTransaction = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("transactions")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+};
+
+// Media Library
+export const uploadFile = async (file: File): Promise<string> => {
   const fileExt = file.name.split('.').pop();
-  const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
-  
+  const fileName = `${Math.random()}.${fileExt}`;
+  const filePath = `uploads/${fileName}`;
+
   const { error: uploadError } = await supabase.storage
-    .from('product-group-images')
-    .upload(fileName, file, { upsert: false });
+    .from('media')
+    .upload(filePath, file);
 
   if (uploadError) throw uploadError;
 
   const { data } = supabase.storage
-    .from('product-group-images')
-    .getPublicUrl(fileName);
+    .from('media')
+    .getPublicUrl(filePath);
 
-  const { data: result, error } = await supabase
+  // Save to media library
+  const { error: dbError } = await supabase
     .from('media_library')
     .insert({
       file_name: file.name,
       file_url: data.publicUrl,
       file_size: file.size,
       mime_type: file.type,
-    })
-    .select()
-    .single();
+    });
+
+  if (dbError) throw dbError;
+
+  return data.publicUrl;
+};
+
+export const getMediaFiles = async () => {
+  const { data, error } = await supabase
+    .from('media_library')
+    .select('*')
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return result;
-}
+  return data || [];
+};
 
-export async function deleteMediaFromLibrary(id: string, imageUrl: string): Promise<void> {
-  const path = imageUrl.split('/product-group-images/').pop();
-  if (path) {
-    await supabase.storage
-      .from('product-group-images')
-      .remove([path]);
-  }
+export const deleteMediaFile = async (id: string, fileUrl: string) => {
+  // Extract file path from URL
+  const urlParts = fileUrl.split('/');
+  const filePath = `uploads/${urlParts[urlParts.length - 1]}`;
 
-  const { error } = await supabase
+  // Delete from storage
+  const { error: storageError } = await supabase.storage
+    .from('media')
+    .remove([filePath]);
+
+  if (storageError) throw storageError;
+
+  // Delete from database
+  const { error: dbError } = await supabase
     .from('media_library')
     .delete()
     .eq('id', id);
 
-  if (error) throw error;
-}
+  if (dbError) throw dbError;
+};
