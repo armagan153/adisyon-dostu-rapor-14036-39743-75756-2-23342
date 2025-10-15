@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Trash2, CreditCard } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, DoorClosed } from "lucide-react";
 import { AddItemFromMenu } from "@/components/AddItemFromMenu";
 import { getTable, getTableItems, deleteTableItem, createTransaction, clearTableItems, updateTableStatus } from "@/lib/supabaseHelpers";
 import type { Table, TableItem } from "@/lib/supabaseHelpers";
@@ -15,7 +15,7 @@ const TableDetail = () => {
   const [table, setTable] = useState<Table | null>(null);
   const [items, setItems] = useState<TableItem[]>([]);
   const [addItemOpen, setAddItemOpen] = useState(false);
-  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [closeTableOpen, setCloseTableOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -49,8 +49,8 @@ const TableDetail = () => {
     }
   };
 
-  const handlePayment = async () => {
-    if (!table || items.length === 0) return;
+  const handleCloseTable = async () => {
+    if (!table) return;
 
     try {
       const total = items.reduce(
@@ -58,24 +58,49 @@ const TableDetail = () => {
         0
       );
 
-      await createTransaction({
-        table_id: table.id,
-        table_name: table.name,
-        total_amount: total,
-        items: items.map((item) => ({
-          name: item.product_name,
-          price: item.product_price,
-          quantity: item.quantity,
-        })),
-      });
+      // 1. Transaction oluşturma
+      if (items.length > 0) {
+        try {
+          await createTransaction({
+            table_id: table.id,
+            table_name: table.name,
+            total_amount: total,
+            items: items.map((item) => ({
+              name: item.product_name,
+              price: item.product_price,
+              quantity: item.quantity,
+            })),
+          });
+        } catch (err: any) {
+          console.error("Transaction oluşturulamadı:", err);
+          toast.error("Transaction oluşturulamadı: " + (err?.message || err));
+          return;
+        }
 
-      await clearTableItems(table.id);
-      await updateTableStatus(table.id, false, null);
+        // 2. Table items silme
+        try {
+          await clearTableItems(table.id);
+        } catch (err: any) {
+          console.error("Table items silinemedi:", err);
+          toast.error("Table items silinemedi: " + (err?.message || err));
+          return;
+        }
+      }
 
-      toast.success("Ödeme alındı!");
+      // 3. Masa durumunu güncelleme
+      try {
+        await updateTableStatus(table.id, false, null);
+      } catch (err: any) {
+        console.error("Masa durumu güncellenemedi:", err);
+        toast.error("Masa durumu güncellenemedi: " + (err?.message || err));
+        return;
+      }
+
+      toast.success("Masa kapatıldı!");
       navigate("/");
-    } catch (error) {
-      toast.error("Ödeme işlemi başarısız");
+    } catch (error: any) {
+      console.error("Masa kapatılamadı:", error);
+      toast.error("Masa kapatılamadı: " + (error?.message || error));
     }
   };
 
@@ -155,16 +180,14 @@ const TableDetail = () => {
           </div>
         </Card>
 
-        {items.length > 0 && (
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={() => setPaymentOpen(true)}
-          >
-            <CreditCard className="w-5 h-5 mr-2" />
-            Ödeme Al
-          </Button>
-        )}
+        <Button
+          size="lg"
+          className="w-full"
+          onClick={() => setCloseTableOpen(true)}
+        >
+          <DoorClosed className="w-5 h-5 mr-2" />
+          Masayı Kapat
+        </Button>
       </div>
 
       <AddItemFromMenu
@@ -174,20 +197,26 @@ const TableDetail = () => {
         onSuccess={loadTableData}
       />
 
-      <AlertDialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+      <AlertDialog open={closeTableOpen} onOpenChange={setCloseTableOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ödeme Onayı</AlertDialogTitle>
+            <AlertDialogTitle>Masa Kapat</AlertDialogTitle>
             <AlertDialogDescription>
-              Toplam: <span className="text-2xl font-bold text-primary">{total.toFixed(2)} ₺</span>
-              <br />
-              <br />
-              Ödemeyi onaylıyor musunuz?
+              {items.length > 0 ? (
+                <>
+                  Toplam: <span className="text-2xl font-bold text-primary">{total.toFixed(2)} ₺</span>
+                  <br />
+                  <br />
+                  Masayı kapatmak ve ödemeyi almak istiyor musunuz?
+                </>
+              ) : (
+                <>Masada ürün yok. Masayı kapatmak istiyor musunuz?</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>İptal</AlertDialogCancel>
-            <AlertDialogAction onClick={handlePayment}>
+            <AlertDialogAction onClick={handleCloseTable}>
               Onayla
             </AlertDialogAction>
           </AlertDialogFooter>
