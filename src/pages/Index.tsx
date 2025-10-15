@@ -39,7 +39,7 @@ const Index = () => {
                 <UtensilsCrossed className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">Restoran POS</h1>
+                <h1 className="text-2xl font-bold">Can POS</h1>
                 <p className="text-sm text-muted-foreground">
                   {occupiedTables} / {tables.length} Masa Dolu
                 </p>
