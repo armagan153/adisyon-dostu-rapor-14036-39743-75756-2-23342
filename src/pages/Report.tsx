@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { TransactionEditDialog } from "@/components/TransactionEditDialog";
-import { isAdminLoggedIn } from "@/lib/adminAuth";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 
 const Report = () => {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ const Report = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const isAdmin = isAdminLoggedIn();
+  const { isAdmin } = useAdminAuth();
 
   useEffect(() => {
     loadTransactions();
@@ -182,6 +182,7 @@ const Report = () => {
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
           onTransactionUpdated={loadTransactions}
+          isAdmin={isAdmin}
         />
       </div>
     </div>

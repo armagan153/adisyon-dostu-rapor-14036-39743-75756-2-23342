@@ -16,6 +16,7 @@ interface TransactionEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTransactionUpdated: () => void;
+  isAdmin: boolean;
 }
 
 export function TransactionEditDialog({
@@ -23,6 +24,7 @@ export function TransactionEditDialog({
   open,
   onOpenChange,
   onTransactionUpdated,
+  isAdmin,
 }: TransactionEditDialogProps) {
   const [editedTotal, setEditedTotal] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -126,39 +128,43 @@ export function TransactionEditDialog({
                         {((item.price || 0) * item.quantity).toFixed(2)} ₺
                       </p>
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteItem(index)}
-                      disabled={isLoading || transaction.items.length === 1}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteItem(index)}
+                        disabled={isLoading || transaction.items.length === 1}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 ))}
             </div>
           </div>
 
-          <div>
-            <h3 className="font-semibold mb-3">Toplam Tutarı Düzenle</h3>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="Yeni tutar"
-                value={editedTotal}
-                onChange={(e) => setEditedTotal(e.target.value)}
-                disabled={isLoading}
-              />
-              <Button
-                onClick={handleUpdateTotal}
-                disabled={isLoading || !editedTotal}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Kaydet
-              </Button>
+          {isAdmin && (
+            <div>
+              <h3 className="font-semibold mb-3">Toplam Tutarı Düzenle</h3>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Yeni tutar"
+                  value={editedTotal}
+                  onChange={(e) => setEditedTotal(e.target.value)}
+                  disabled={isLoading}
+                />
+                <Button
+                  onClick={handleUpdateTotal}
+                  disabled={isLoading || !editedTotal}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Kaydet
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
