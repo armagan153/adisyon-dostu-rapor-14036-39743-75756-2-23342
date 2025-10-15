@@ -40,13 +40,18 @@ export function TransactionEditDialog({
       const oldItems = [...transaction.items];
       await deleteTransactionItem(transaction.id, itemIndex, transaction);
 
-      await createAuditLog({
-        transaction_id: transaction.id,
-        edited_by: "admin",
-        edit_type: "delete_item",
-        old_value: { item: oldItems[itemIndex] },
-        description: `Ürün silindi: ${oldItems[itemIndex].name}`,
-      });
+      // Audit log best-effort: don't block deletion if logging fails
+      try {
+        await createAuditLog({
+          transaction_id: transaction.id,
+          edited_by: "admin",
+          edit_type: "delete_item",
+          old_value: { item: oldItems[itemIndex] },
+          description: `Ürün silindi: ${oldItems[itemIndex].name}`,
+        });
+      } catch (logErr) {
+        console.warn("Audit log yazılamadı:", logErr);
+      }
 
       toast.success("Ürün silindi");
       onTransactionUpdated();
@@ -72,14 +77,19 @@ export function TransactionEditDialog({
       const oldTotal = transaction.total_amount;
       await updateTransaction(transaction.id, { total_amount: newTotal });
 
-      await createAuditLog({
-        transaction_id: transaction.id,
-        edited_by: "admin",
-        edit_type: "update_total",
-        old_value: { total: oldTotal },
-        new_value: { total: newTotal },
-        description: `Toplam tutar güncellendi: ${oldTotal} ₺ → ${newTotal} ₺`,
-      });
+      // Audit log best-effort: don't block if logging fails
+      try {
+        await createAuditLog({
+          transaction_id: transaction.id,
+          edited_by: "admin",
+          edit_type: "update_total",
+          old_value: { total: oldTotal },
+          new_value: { total: newTotal },
+          description: `Toplam tutar güncellendi: ${oldTotal} ₺ → ${newTotal} ₺`,
+        });
+      } catch (logErr) {
+        console.warn("Audit log yazılamadı:", logErr);
+      }
 
       toast.success("Toplam tutar güncellendi");
       setEditedTotal("");
@@ -136,7 +146,7 @@ export function TransactionEditDialog({
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDeleteItem(index)}
-                        disabled={isLoading || transaction.items.length === 1}
+                        disabled={isLoading}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
