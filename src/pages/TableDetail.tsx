@@ -49,6 +49,7 @@ const TableDetail = () => {
     }
   };
 
+  // Admin kontrolü kaldırıldı, tüm authenticated kullanıcılar masayı kapatabilir
   const handleCloseTable = async () => {
     if (!table) return;
 

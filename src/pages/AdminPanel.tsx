@@ -5,22 +5,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductGroupManager } from "@/components/admin/ProductGroupManager";
 import { ProductManager } from "@/components/admin/ProductManager";
 import { TableManager } from "@/components/admin/TableManager";
-import { isAdminLoggedIn, clearAdminSession } from "@/lib/adminAuth";
 import { ArrowLeft, LogOut, Settings, FileText } from "lucide-react";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
+  const { isAdmin, loading, logout } = useAdminAuth();
 
   useEffect(() => {
-    if (!isAdminLoggedIn()) {
+    if (!loading && !isAdmin) {
       navigate("/");
     }
-  }, [navigate]);
+  }, [isAdmin, loading, navigate]);
 
-  const handleLogout = () => {
-    clearAdminSession();
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="text-lg font-semibold">Yükleniyor...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,7 +53,7 @@ const AdminPanel = () => {
               </Button>
               <Button variant="destructive" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
-                Çıkış
+                Çıkış Yap
               </Button>
             </div>
           </div>

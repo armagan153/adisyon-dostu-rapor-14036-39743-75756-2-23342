@@ -9,6 +9,7 @@ import Report from "./pages/Report";
 import AdminPanel from "./pages/AdminPanel";
 import AuditLogs from "./pages/AuditLogs";
 import NotFound from "./pages/NotFound";
+import { AdminAuthProvider } from "@/context/AdminAuthContext";
 
 const queryClient = new QueryClient();
 
@@ -17,17 +18,19 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/table/:id" element={<TableDetail />} />
-          <Route path="/report" element={<Report />} />
-          <Route path="/audit-logs" element={<AuditLogs />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AdminAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/table/:id" element={<TableDetail />} />
+            <Route path="/report" element={<Report />} />
+            <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AdminAuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

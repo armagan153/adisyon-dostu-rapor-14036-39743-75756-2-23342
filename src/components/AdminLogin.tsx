@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { checkAdminPassword, setAdminSession } from "@/lib/adminAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 
@@ -14,6 +14,7 @@ interface AdminLoginProps {
 }
 
 export function AdminLogin({ open, onOpenChange, onSuccess }: AdminLoginProps) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,16 +23,19 @@ export function AdminLogin({ open, onOpenChange, onSuccess }: AdminLoginProps) {
     setIsLoading(true);
 
     try {
-      const isValid = await checkAdminPassword(password.trim());
-      
-      if (isValid) {
-        setAdminSession();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim(),
+      });
+
+      if (error || !data.session) {
+        toast.error("Giriş başarısız! Lütfen bilgilerinizi kontrol edin.");
+      } else {
         toast.success("Giriş başarılı!");
         onOpenChange(false);
+        setEmail("");
         setPassword("");
         onSuccess();
-      } else {
-        toast.error("Hatalı parola!");
       }
     } catch (error) {
       toast.error("Bir hata oluştu!");
@@ -48,9 +52,22 @@ export function AdminLogin({ open, onOpenChange, onSuccess }: AdminLoginProps) {
             <Lock className="w-5 h-5" />
             Admin Girişi
           </DialogTitle>
-          <DialogDescription>Admin paneline erişmek için parolayı girin.</DialogDescription>
+          <DialogDescription>Admin paneline erişmek için e-posta ve parolanızla giriş yapın.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">E-posta</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@email.com"
+              disabled={isLoading}
+              autoFocus
+              required
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="password">Parola</Label>
             <Input
@@ -58,13 +75,13 @@ export function AdminLogin({ open, onOpenChange, onSuccess }: AdminLoginProps) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Admin parolasını girin"
+              placeholder="Parolanızı girin"
               disabled={isLoading}
-              autoFocus
+              required
             />
           </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Kontrol ediliyor..." : "Giriş Yap"}
+            {isLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
           </Button>
         </form>
       </DialogContent>
