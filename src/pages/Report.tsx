@@ -19,7 +19,10 @@ const Report = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const { isAdmin } = useAdminAuth();
+  const { isAdmin, loading } = useAdminAuth();
+
+  // Debug log
+  console.log("Report - isAdmin:", isAdmin, "loading:", loading);
 
   useEffect(() => {
     loadTransactions();

@@ -29,6 +29,9 @@ export function TransactionEditDialog({
   const [editedTotal, setEditedTotal] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Debug log
+  console.log("TransactionEditDialog - isAdmin:", isAdmin, "open:", open);
+
   if (!transaction) return null;
 
   const handleDeleteItem = async (itemIndex: number) => {
