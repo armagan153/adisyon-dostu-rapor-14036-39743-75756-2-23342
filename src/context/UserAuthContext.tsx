@@ -41,15 +41,16 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         .select('*, app_users(*)')
         .eq('token', token)
         .gt('expires_at', new Date().toISOString())
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      if (error || !data || !data.app_users) {
         localStorage.removeItem('userToken');
         setUser(null);
       } else {
+        const appUser = data.app_users as any;
         setUser({
-          id: data.app_users.id,
-          username: data.app_users.username,
+          id: appUser.id,
+          username: appUser.username,
         });
       }
     } catch (error) {
@@ -88,11 +89,11 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
       // Session oluştur
       const { error: sessionError } = await supabase
         .from('user_sessions')
-        .insert({
+        .insert([{
           user_id: userId,
           token: token,
           expires_at: expiresAt.toISOString()
-        });
+        }]);
 
       if (sessionError) {
         console.error('Session creation error:', sessionError);

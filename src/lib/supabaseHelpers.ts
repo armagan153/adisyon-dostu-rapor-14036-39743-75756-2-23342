@@ -335,11 +335,11 @@ export const createTransaction = async (transactionData: CreateTransactionData):
       table_id: transactionData.table_id,
       table_name: transactionData.table_name,
       total_amount: transactionData.total_amount,
-      items: transactionData.items,
+      items: transactionData.items as any,
       completed_at: new Date().toISOString(),
       opened_by: tableData?.opened_by || 'bilinmeyen',
       closed_by: currentUser,
-      items_added_by: itemsAddedBy
+      items_added_by: itemsAddedBy as any
     })
     .select()
     .single();
@@ -496,14 +496,14 @@ export const deleteTransactionItem = async (transactionId: string, itemIndex: nu
   
   // Calculate new total
   const newTotal = updatedItems.reduce((sum: number, item: any) => {
-    return sum + ((item.price || 0) * item.quantity);
+    return sum + ((Number(item.price) || 0) * (Number(item.quantity) || 0));
   }, 0);
 
   const { error: updateError } = await supabase
     .from("transactions")
     .update({ 
-      items: updatedItems,
-      total_amount: newTotal 
+      items: updatedItems as any,
+      total_amount: Number(newTotal)
     })
     .eq("id", transactionId);
 
@@ -529,8 +529,8 @@ export const createAuditLog = async (log: Omit<AuditLog, "id" | "created_at">): 
       edit_type: log.edit_type,
       edited_by: log.edited_by,
       description: log.description,
-      old_value: log.old_value,
-      new_value: log.new_value,
+      old_value: log.old_value as any,
+      new_value: log.new_value as any,
     });
 
   if (error) throw error;
