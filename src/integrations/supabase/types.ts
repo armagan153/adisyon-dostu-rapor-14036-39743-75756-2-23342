@@ -38,7 +38,7 @@ export type Database = {
       app_users: {
         Row: {
           created_at: string | null
-          created_by: string
+          created_by: string | null
           id: string
           is_active: boolean | null
           password_hash: string
@@ -47,7 +47,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           id?: string
           is_active?: boolean | null
           password_hash: string
@@ -56,12 +56,42 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           id?: string
           is_active?: boolean | null
           password_hash?: string
           updated_at?: string | null
           username?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          created_at: string
+          description: string | null
+          edit_type: string
+          edited_by: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          edit_type: string
+          edited_by: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          edit_type?: string
+          edited_by?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
         }
         Relationships: []
       }
@@ -208,6 +238,51 @@ export type Database = {
           },
         ]
       }
+      table_operations: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          id: string
+          operation_type: string
+          table_id: number | null
+          user_id: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          operation_type: string
+          table_id?: number | null
+          user_id?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          operation_type?: string
+          table_id?: number | null
+          user_id?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_operations_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_operations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tables: {
         Row: {
           created_at: string | null
@@ -339,16 +414,66 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          token: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          token: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          token?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          id: number
+          password_hash: string
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          password_hash: string
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          password_hash?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       create_user_with_password: {
-        Args: {
-          password: string
-          username: string
-        }
+        Args: { password: string; username: string }
         Returns: string
       }
       has_role: {
@@ -359,10 +484,7 @@ export type Database = {
         Returns: boolean
       }
       update_user_password: {
-        Args: {
-          new_password: string
-          user_id: string
-        }
+        Args: { new_password: string; user_id: string }
         Returns: boolean
       }
       verify_admin_password: {
@@ -370,10 +492,7 @@ export type Database = {
         Returns: boolean
       }
       verify_user_password: {
-        Args: {
-          pw: string
-          uname: string
-        }
+        Args: { pw: string; uname: string }
         Returns: {
           is_valid: boolean
           user_id: string
