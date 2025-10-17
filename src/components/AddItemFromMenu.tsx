@@ -51,8 +51,9 @@ export function AddItemFromMenu({ open, onOpenChange, tableId, onSuccess }: AddI
 
   const loadProducts = async (groupId: string) => {
     try {
-      const data = await getProducts(groupId);
-      setProducts(data);
+      const allProducts = await getProducts();
+      const filteredProducts = allProducts.filter(p => p.group_id === groupId);
+      setProducts(filteredProducts);
     } catch (error) {
       toast.error("Ürünler yüklenemedi");
     }

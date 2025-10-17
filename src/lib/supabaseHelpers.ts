@@ -430,3 +430,146 @@ export const deleteMediaFile = async (id: string, fileUrl: string) => {
 
   if (dbError) throw dbError;
 };
+
+// Table Management Functions
+export const createTable = async (table: { id: number; name: string }): Promise<Table> => {
+  const { data, error } = await supabase
+    .from("tables")
+    .insert({
+      id: table.id,
+      name: table.name,
+      is_occupied: false,
+      opened_at: null
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateTableName = async (id: number, name: string): Promise<void> => {
+  const { error } = await supabase
+    .from("tables")
+    .update({ name })
+    .eq("id", id);
+
+  if (error) throw error;
+};
+
+export const deleteTable = async (id: number): Promise<void> => {
+  const { error } = await supabase
+    .from("tables")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+};
+
+// Product Management Functions
+export const getAllProducts = async (): Promise<Product[]> => {
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      *,
+      product_groups (*)
+    `)
+    .order("name");
+
+  if (error) throw error;
+  return data || [];
+};
+
+// Transaction Item Management
+export const deleteTransactionItem = async (transactionId: string, itemIndex: number): Promise<void> => {
+  const { data: transaction, error: fetchError } = await supabase
+    .from("transactions")
+    .select("items, total_amount")
+    .eq("id", transactionId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const items = Array.isArray(transaction.items) ? transaction.items : [];
+  const deletedItem = items[itemIndex];
+  const updatedItems = items.filter((_: any, index: number) => index !== itemIndex);
+  
+  // Calculate new total
+  const newTotal = updatedItems.reduce((sum: number, item: any) => {
+    return sum + ((item.price || 0) * item.quantity);
+  }, 0);
+
+  const { error: updateError } = await supabase
+    .from("transactions")
+    .update({ 
+      items: updatedItems,
+      total_amount: newTotal 
+    })
+    .eq("id", transactionId);
+
+  if (updateError) throw updateError;
+};
+
+// Audit Log Types
+export interface AuditLog {
+  id: string;
+  edit_type: string;
+  edited_by: string;
+  created_at: string;
+  description: string;
+  old_value: any;
+  new_value: any;
+}
+
+// Audit Log Functions
+export const createAuditLog = async (log: Omit<AuditLog, "id" | "created_at">): Promise<void> => {
+  const { error } = await supabase
+    .from("audit_logs")
+    .insert({
+      edit_type: log.edit_type,
+      edited_by: log.edited_by,
+      description: log.description,
+      old_value: log.old_value,
+      new_value: log.new_value,
+    });
+
+  if (error) throw error;
+};
+
+export const getAuditLogs = async (): Promise<AuditLog[]> => {
+  const { data, error } = await supabase
+    .from("audit_logs")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as AuditLog[];
+};
+
+// Media Library Types and Functions
+export interface MediaLibraryItem {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  mime_type: string;
+  created_at: string;
+}
+
+export const getMediaLibrary = async (): Promise<MediaLibraryItem[]> => {
+  const { data, error } = await supabase
+    .from('media_library')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const addMediaToLibrary = async (file: File): Promise<string> => {
+  return await uploadFile(file);
+};
+
+export const deleteMediaFromLibrary = async (id: string, fileUrl: string): Promise<void> => {
+  await deleteMediaFile(id, fileUrl);
+};

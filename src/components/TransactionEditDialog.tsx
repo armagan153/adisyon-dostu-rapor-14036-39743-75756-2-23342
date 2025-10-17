@@ -29,25 +29,22 @@ export function TransactionEditDialog({
   const [editedTotal, setEditedTotal] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Debug log
-  console.log("TransactionEditDialog - isAdmin:", isAdmin, "open:", open);
-
   if (!transaction) return null;
 
   const handleDeleteItem = async (itemIndex: number) => {
     setIsLoading(true);
     try {
       const oldItems = [...transaction.items];
-      await deleteTransactionItem(transaction.id, itemIndex, transaction);
+      await deleteTransactionItem(transaction.id, itemIndex);
 
       // Audit log best-effort: don't block deletion if logging fails
       try {
         await createAuditLog({
-          transaction_id: transaction.id,
           edited_by: "admin",
           edit_type: "delete_item",
           old_value: { item: oldItems[itemIndex] },
           description: `Ürün silindi: ${oldItems[itemIndex].name}`,
+          new_value: null,
         });
       } catch (logErr) {
         console.warn("Audit log yazılamadı:", logErr);
@@ -80,7 +77,6 @@ export function TransactionEditDialog({
       // Audit log best-effort: don't block if logging fails
       try {
         await createAuditLog({
-          transaction_id: transaction.id,
           edited_by: "admin",
           edit_type: "update_total",
           old_value: { total: oldTotal },
