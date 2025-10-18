@@ -113,8 +113,7 @@ const Index = () => {
         open={userLoginOpen}
         onOpenChange={setUserLoginOpen}
         onSuccess={() => {
-          // Login başarılı olduğunda sayfayı yenile
-          window.location.reload();
+          setUserLoginOpen(false);
         }}
       />
     </div>

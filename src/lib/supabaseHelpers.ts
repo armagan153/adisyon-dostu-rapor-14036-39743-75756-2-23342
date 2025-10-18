@@ -15,6 +15,7 @@ export interface Product {
   price: number | null;
   group_id: string;
   is_active: boolean;
+  image_url: string | null;
   created_at: string;
   updated_at: string;
   product_groups?: ProductGroup;
@@ -129,8 +130,22 @@ export const getProducts = async (): Promise<Product[]> => {
   const { data, error } = await supabase
     .from("products")
     .select(`
-      *,
-      product_groups (*)
+      id,
+      name,
+      price,
+      group_id,
+      is_active,
+      image_url,
+      created_at,
+      updated_at,
+      product_groups (
+        id,
+        name,
+        image_url,
+        order_index,
+        created_at,
+        updated_at
+      )
     `)
     .eq("is_active", true)
     .order("name");
@@ -142,7 +157,7 @@ export const getProducts = async (): Promise<Product[]> => {
 export const getProductsByGroup = async (groupId: string): Promise<Product[]> => {
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select("id, name, price, group_id, is_active, image_url, created_at, updated_at")
     .eq("group_id", groupId)
     .eq("is_active", true)
     .order("name");
@@ -471,8 +486,22 @@ export const getAllProducts = async (): Promise<Product[]> => {
   const { data, error } = await supabase
     .from("products")
     .select(`
-      *,
-      product_groups (*)
+      id,
+      name,
+      price,
+      group_id,
+      is_active,
+      image_url,
+      created_at,
+      updated_at,
+      product_groups (
+        id,
+        name,
+        image_url,
+        order_index,
+        created_at,
+        updated_at
+      )
     `)
     .order("name");
 

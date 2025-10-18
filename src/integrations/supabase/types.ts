@@ -157,6 +157,7 @@ export type Database = {
           created_at: string | null
           group_id: string
           id: string
+          image_url: string | null
           is_active: boolean | null
           name: string
           price: number | null
@@ -166,6 +167,7 @@ export type Database = {
           created_at?: string | null
           group_id: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name: string
           price?: number | null
@@ -175,6 +177,7 @@ export type Database = {
           created_at?: string | null
           group_id?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name?: string
           price?: number | null
@@ -473,8 +476,24 @@ export type Database = {
     }
     Functions: {
       create_user_with_password: {
-        Args: { password: string; username: string }
+        Args:
+          | { p_created_by: string; p_password: string; p_username: string }
+          | { password: string; username: string }
         Returns: string
+      }
+      get_all_user_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          role: string
+          user_id: string
+        }[]
+      }
+      get_app_user_basic: {
+        Args: { uid: string }
+        Returns: {
+          id: string
+          username: string
+        }[]
       }
       has_role: {
         Args: {

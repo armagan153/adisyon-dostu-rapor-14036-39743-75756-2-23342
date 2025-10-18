@@ -36,26 +36,41 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { data, error } = await supabase
+      // Only get user_id from session
+      const { data: sessionData, error: sessionError } = await supabase
         .from('user_sessions')
-        .select('*, app_users(*)')
+        .select('user_id')
         .eq('token', token)
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
-      if (error || !data || !data.app_users) {
+      if (sessionError || !sessionData) {
         localStorage.removeItem('userToken');
+        localStorage.removeItem('auth');
         setUser(null);
       } else {
-        const appUser = data.app_users as any;
-        setUser({
-          id: appUser.id,
-          username: appUser.username,
-        });
+        // Use RPC to get username (bypasses RLS)
+        const { data: userData, error: userError } = await supabase
+          .rpc('get_app_user_basic', { uid: sessionData.user_id });
+
+        if (userError || !userData || userData.length === 0) {
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('auth');
+          setUser(null);
+        } else {
+          const userInfo = userData[0];
+          setUser({
+            id: userInfo.id,
+            username: userInfo.username,
+          });
+          // Set localStorage.auth for backward compatibility
+          localStorage.setItem('auth', JSON.stringify({ username: userInfo.username }));
+        }
       }
     } catch (error) {
       console.error('Session check error:', error);
       localStorage.removeItem('userToken');
+      localStorage.removeItem('auth');
       setUser(null);
     } finally {
       setLoading(false);
@@ -102,6 +117,9 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
 
       // Token'ı localStorage'a kaydet
       localStorage.setItem('userToken', token);
+      
+      // Set localStorage.auth for backward compatibility
+      localStorage.setItem('auth', JSON.stringify({ username }));
 
       // User state'i güncelle
       setUser({
@@ -126,9 +144,11 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         .eq('token', token)
         .then(() => {
           localStorage.removeItem('userToken');
+          localStorage.removeItem('auth');
           setUser(null);
         });
     } else {
+      localStorage.removeItem('auth');
       setUser(null);
     }
   };

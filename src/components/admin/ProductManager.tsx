@@ -9,8 +9,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { getAllProducts, getProductGroups, createProduct, updateProduct, deleteProduct } from "@/lib/supabaseHelpers";
 import type { Product, ProductGroup } from "@/lib/supabaseHelpers";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { MediaLibrary } from "@/components/admin/MediaLibrary";
 
 export function ProductManager() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -19,12 +20,14 @@ export function ProductManager() {
   const [isAddEditOpen, setIsAddEditOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
     price: "",
     group_id: "",
     is_active: true,
+    image_url: "",
   });
 
   useEffect(() => {
@@ -55,6 +58,7 @@ export function ProductManager() {
       price: "",
       group_id: groups[0]?.id || "",
       is_active: true,
+      image_url: "",
     });
     setIsAddEditOpen(true);
   };
@@ -66,6 +70,7 @@ export function ProductManager() {
       price: product.price?.toString() || "",
       group_id: product.group_id,
       is_active: product.is_active,
+      image_url: product.image_url || "",
     });
     setIsAddEditOpen(true);
   };
@@ -88,7 +93,8 @@ export function ProductManager() {
         price: formData.price ? parseFloat(formData.price) : null,
         group_id: formData.group_id,
         is_active: formData.is_active,
-      };
+        image_url: formData.image_url || null,
+      } as any;
 
       if (editingProduct) {
         await updateProduct(editingProduct.id, data);
@@ -154,6 +160,7 @@ export function ProductManager() {
           <table className="w-full">
             <thead className="bg-secondary">
               <tr>
+                <th className="px-4 py-3 text-left">Görsel</th>
                 <th className="px-4 py-3 text-left">Ürün Adı</th>
                 <th className="px-4 py-3 text-left">Grup</th>
                 <th className="px-4 py-3 text-left">Fiyat</th>
@@ -164,6 +171,15 @@ export function ProductManager() {
             <tbody>
               {filteredProducts.map((product) => (
                 <tr key={product.id} className="border-t">
+                  <td className="px-4 py-3">
+                    {product.image_url ? (
+                      <img src={product.image_url} alt={product.name} className="w-12 h-12 object-cover rounded" />
+                    ) : (
+                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 py-3">{product.name}</td>
                   <td className="px-4 py-3">
                     {product.product_groups?.name}
@@ -264,6 +280,37 @@ export function ProductManager() {
               )}
             </div>
 
+            <div className="space-y-2">
+              <Label>Ürün Görseli</Label>
+              <div className="flex gap-2 items-center">
+                {formData.image_url ? (
+                  <div className="relative">
+                    <img src={formData.image_url} alt="Ürün görseli" className="w-20 h-20 object-cover rounded border" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2"
+                      onClick={() => setFormData({ ...formData, image_url: "" })}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 bg-muted rounded border flex items-center justify-center">
+                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsMediaLibraryOpen(true)}
+                >
+                  Kütüphaneden Seç
+                </Button>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between">
               <Label htmlFor="active">Aktif</Label>
               <Switch
@@ -288,6 +335,16 @@ export function ProductManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <MediaLibrary
+        isOpen={isMediaLibraryOpen}
+        onClose={() => setIsMediaLibraryOpen(false)}
+        onSelect={(url) => {
+          setFormData({ ...formData, image_url: url });
+          setIsMediaLibraryOpen(false);
+        }}
+        selectedImageUrl={formData.image_url}
+      />
     </div>
   );
 }
